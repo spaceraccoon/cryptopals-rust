@@ -4,6 +4,8 @@ use crate::utils::{
     convert::hex_to_bytes,
     encrypt::repeating_key_xor,
 };
+#[cfg(test)]
+use openssl::symm::{decrypt, Cipher};
 
 #[cfg(test)]
 pub struct DecryptResult {
@@ -47,7 +49,7 @@ pub fn guess_repeating_key(bytes: &Vec<u8>, size: usize) -> Vec<u8> {
 
     for x in 0..size {
         let single_bytes = bytes[x..].iter().step_by(size).map(|x| x.clone()).collect();
-        let result = single_byte_xor(single_bytes);
+        let result = single_byte_xor(&single_bytes);
         key[x] = result.key;
     }
 
@@ -56,7 +58,7 @@ pub fn guess_repeating_key(bytes: &Vec<u8>, size: usize) -> Vec<u8> {
 
 #[cfg(test)]
 // Finds single character XOR and decrypts the message.
-pub fn single_byte_xor(bytes: Vec<u8>) -> DecryptResult {
+pub fn single_byte_xor(bytes: &Vec<u8>) -> DecryptResult {
     let length = bytes.len();
     let mut top_score: f32 = 0.000;
     let mut top_key: u8 = 0;
@@ -87,11 +89,20 @@ pub fn single_byte_xor(bytes: Vec<u8>) -> DecryptResult {
     return result;
 }
 
+#[cfg(test)]
+// Decrypts AES in ECB mode.
+pub fn decrypt_aes_ecb(ciphertext: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let cipher = Cipher::aes_128_ecb();
+    let plaintext = decrypt(cipher, key, None, ciphertext).unwrap();
+
+    return plaintext;
+}
+
 #[test]
 fn guess_keysize_test_1() {
     let ciphertext = String::from("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f");
     let expected_result = 3;
-    assert_eq!(expected_result, guess_keysize(&hex_to_bytes(ciphertext)));
+    assert_eq!(expected_result, guess_keysize(&hex_to_bytes(&ciphertext)));
 }
 
 #[test]
@@ -101,13 +112,13 @@ fn guess_repeating_key_test_1() {
 
     assert_eq!(
         expected_result,
-        String::from_utf8(guess_repeating_key(&hex_to_bytes(ciphertext), 3)).unwrap()
+        String::from_utf8(guess_repeating_key(&hex_to_bytes(&ciphertext), 3)).unwrap()
     );
 }
 
 #[test]
 fn break_repeating_key_test_1() {
-    let ciphertext = hex_to_bytes(String::from("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"));
+    let ciphertext = hex_to_bytes(&String::from("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"));
     let expected_result =
         "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal";
     let keysize = usize::from(guess_keysize(&ciphertext));

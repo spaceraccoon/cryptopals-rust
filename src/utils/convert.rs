@@ -111,7 +111,7 @@ pub fn bytes_to_hex(bytes: Vec<u8>) -> String {
 
 #[cfg(test)]
 // Decodes a hex string into a uint8 vector.
-pub fn hex_to_bytes(s: String) -> Vec<u8> {
+pub fn hex_to_bytes(s: &String) -> Vec<u8> {
     let result = (0..s.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
@@ -127,6 +127,6 @@ pub fn hex_to_bytes(s: String) -> Vec<u8> {
 fn base64_to_bytes_test_1() {
     let base64 = String::from("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");
     let expected_result =
-    hex_to_bytes(String::from("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"));
+    hex_to_bytes(&String::from("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d"));
     assert_eq!(expected_result, base64_to_bytes(base64));
 }

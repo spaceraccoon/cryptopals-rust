@@ -56,6 +56,15 @@ pub fn compute_edit_distance(x: Vec<u8>, y: Vec<u8>) -> u64 {
         .fold(0, |distance, (a, b)| distance + (a ^ b).count_ones() as u64)
 }
 
+#[cfg(test)]
+// Detects AES in ECB mode.
+pub fn detect_aes_ecb(bytes: &Vec<u8>) -> bool {
+    let mut blocks: Vec<&[u8]> = bytes.chunks(16).collect();
+    blocks.sort();
+    blocks.dedup();
+    return blocks.concat().len() != bytes.len();
+}
+
 #[test]
 fn compute_edit_distance_test_1() {
     let s1 = String::from("this is a test");

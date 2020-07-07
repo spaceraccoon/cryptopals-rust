@@ -8,6 +8,6 @@ fn test_1() {
     let expected_result = String::from("746865206b696420646f6e277420706c6179");
     assert_eq!(
         expected_result,
-        bytes_to_hex(fixed_xor(hex_to_bytes(s1), hex_to_bytes(s2)))
+        bytes_to_hex(fixed_xor(hex_to_bytes(&s1), hex_to_bytes(&s2)))
     );
 }

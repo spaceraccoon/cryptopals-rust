@@ -10,8 +10,8 @@ fn test_1() {
     let mut decrypted_bytes: Vec<u8> = Vec::new();
     for line in BufReader::new(file).lines() {
         let line_string = line.unwrap();
-        let bytes = hex_to_bytes(String::from(line_string));
-        let result = single_byte_xor(bytes);
+        let bytes = hex_to_bytes(&String::from(line_string));
+        let result = single_byte_xor(&bytes);
         if result.score > top_score {
             top_score = result.score;
             decrypted_bytes = result.decrypted_bytes;
