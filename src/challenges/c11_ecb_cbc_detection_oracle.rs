@@ -20,14 +20,17 @@ fn test_1() {
     let plaintext = [prepend, random_bytes, append].concat();
     // Create canary by appending same bytes to plaintext, which would encrypt to same blocks in ECB.
     let canary = [plaintext, vec![41; AES_BLOCK_SIZE * 3]].concat();
+    // Generate ciphertext based on random encryption type
     let is_aes_ecb: bool = rng.gen::<bool>();
-    let mut ciphertext = Vec::new();
-    if is_aes_ecb {
-        ciphertext = encrypt_aes_ecb(&canary, &key);
+    let ciphertext = if is_aes_ecb {
+        encrypt_aes_ecb(&canary, &key)
     } else {
-        let iv: Vec<u8> = (0..AES_BLOCK_SIZE).map(|_| rng.gen::<u8>()).collect();
-        ciphertext = encrypt_aes_cbc(&canary, &key, &iv);
-    }
+        encrypt_aes_cbc(
+            &canary,
+            &key,
+            &(0..AES_BLOCK_SIZE).map(|_| rng.gen::<u8>()).collect(),
+        )
+    };
     let result = detect_aes_ecb(&ciphertext);
     assert_eq!(is_aes_ecb, result);
 }
