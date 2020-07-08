@@ -5,7 +5,7 @@ use crate::utils::{
     encrypt::repeating_key_xor,
 };
 #[cfg(test)]
-use openssl::symm::{decrypt, Cipher};
+use openssl::symm::{decrypt, encrypt, Cipher};
 
 #[cfg(test)]
 pub struct DecryptResult {
@@ -13,6 +13,9 @@ pub struct DecryptResult {
     pub key: u8,
     pub score: f32,
 }
+
+#[cfg(test)]
+pub const AES_BLOCK_SIZE: usize = 16;
 
 #[cfg(test)]
 // Guesses the most likely keysize for a repeating-key XOR plaintext.
@@ -94,6 +97,50 @@ pub fn single_byte_xor(bytes: &Vec<u8>) -> DecryptResult {
 pub fn decrypt_aes_ecb(ciphertext: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
     let cipher = Cipher::aes_128_ecb();
     let plaintext = decrypt(cipher, key, None, ciphertext).unwrap();
+
+    return plaintext;
+}
+
+#[cfg(test)]
+// Detects AES in ECB mode.
+pub fn detect_aes_ecb(bytes: &Vec<u8>) -> bool {
+    let mut blocks: Vec<&[u8]> = bytes.chunks(AES_BLOCK_SIZE).collect();
+    blocks.sort();
+    blocks.dedup();
+    return blocks.concat().len() != bytes.len();
+}
+
+#[cfg(test)]
+pub fn xor_vectors(v1: &Vec<u8>, v2: &Vec<u8>) -> Vec<u8> {
+    let xored: Vec<u8> = v1.iter().zip(v2.iter()).map(|(&x1, &x2)| x1 ^ x2).collect();
+    return xored;
+}
+
+#[cfg(test)]
+// Decrypts AES in CBC mode.
+pub fn decrypt_aes_cbc(ciphertext: &Vec<u8>, iv: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    let mut plaintext = Vec::new();
+    let blocks: Vec<&[u8]> = ciphertext.chunks(AES_BLOCK_SIZE).collect();
+    let num_blocks = blocks.len();
+    for x in 0..num_blocks {
+        // For single blocks, OpenSSL requires additional padding before decryping.
+        let mut padding = encrypt(
+            openssl::symm::Cipher::aes_128_ecb(),
+            key,
+            None,
+            &[AES_BLOCK_SIZE as u8; AES_BLOCK_SIZE],
+        )
+        .unwrap();
+        padding.truncate(AES_BLOCK_SIZE);
+        let mut padded_block = blocks[x].to_vec();
+        padded_block.extend_from_slice(&padding);
+        let decrypted_block = decrypt_aes_ecb(&padded_block, key);
+        if x == 0 {
+            plaintext.append(&mut xor_vectors(&decrypted_block, iv));
+        } else {
+            plaintext.append(&mut xor_vectors(&decrypted_block, &blocks[x - 1].to_vec()));
+        }
+    }
 
     return plaintext;
 }

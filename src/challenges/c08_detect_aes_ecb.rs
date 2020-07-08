@@ -1,5 +1,5 @@
 #[cfg(test)]
-use crate::utils::{analyze::detect_aes_ecb, convert::hex_to_bytes};
+use crate::utils::{convert::hex_to_bytes, decrypt::detect_aes_ecb};
 #[cfg(test)]
 use std::{fs::File, io::BufRead, io::BufReader};
 

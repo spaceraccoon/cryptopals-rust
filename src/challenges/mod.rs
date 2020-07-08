@@ -6,3 +6,6 @@ mod c05_repeating_key_xor;
 mod c06_break_repeating_key_xor;
 mod c07_decrypt_aes_ecb;
 mod c08_detect_aes_ecb;
+mod c09_pkcs7_padding;
+mod c10_decrypt_aes_cbc;
+mod c11_ecb_cbc_detection_oracle;

@@ -1,11 +1,11 @@
 #[cfg(test)]
 use crate::utils::{convert::base64_to_bytes, decrypt::decrypt_aes_ecb};
 #[cfg(test)]
-use std::fs;
+use std::fs::read_to_string;
 
 #[test]
 fn test_1() {
-    let contents: String = fs::read_to_string("resources/7.txt").unwrap();
+    let contents: String = read_to_string("resources/7.txt").unwrap();
     let ciphertext = base64_to_bytes(contents);
     let key = String::from("YELLOW SUBMARINE").into_bytes();
 
