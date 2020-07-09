@@ -123,6 +123,29 @@ pub fn hex_to_bytes(s: &String) -> Vec<u8> {
     return result;
 }
 
+#[cfg(test)]
+pub struct UserProfile {
+    pub email: String,
+    pub uid: u8,
+    pub role: String,
+}
+
+#[cfg(test)]
+// Encodes a user profile given an email address.
+pub fn profile_for(input: &String) -> String {
+    let email = input.replace(&['&', '='][..], "");
+    let user_profile = UserProfile {
+        email: email,
+        uid: 10,
+        role: String::from("user"),
+    };
+    let encoded_profile = String::from(format!(
+        "email={}&uid={}&role={}",
+        user_profile.email, user_profile.uid, user_profile.role
+    ));
+    return encoded_profile;
+}
+
 #[test]
 fn base64_to_bytes_test_1() {
     let base64 = String::from("SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t");

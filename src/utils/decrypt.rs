@@ -2,10 +2,13 @@
 use crate::utils::{
     analyze::{bytes_to_score, compute_edit_distance},
     convert::hex_to_bytes,
+    encrypt::encryption_oracle_2,
     encrypt::repeating_key_xor,
 };
 #[cfg(test)]
 use openssl::symm::{decrypt, encrypt, Cipher};
+#[cfg(test)]
+use rand::{thread_rng, Rng};
 
 #[cfg(test)]
 pub struct DecryptResult {
@@ -95,10 +98,167 @@ pub fn single_byte_xor(bytes: &Vec<u8>) -> DecryptResult {
 #[cfg(test)]
 // Decrypts AES in ECB mode.
 pub fn decrypt_aes_ecb(ciphertext: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
-    let cipher = Cipher::aes_128_ecb();
-    let plaintext = decrypt(cipher, key, None, ciphertext).unwrap();
+    return decrypt(Cipher::aes_128_ecb(), key, None, ciphertext).unwrap();
+}
 
-    return plaintext;
+#[cfg(test)]
+// Get AES in ECB mode encryption block size.
+pub fn get_aes_ecb_block_size(
+    oracle: &dyn Fn(&Vec<u8>, &Vec<u8>) -> Vec<u8>,
+    fixed_key: &Vec<u8>,
+) -> usize {
+    let mut max_length = oracle(&Vec::new(), fixed_key).len();
+    let mut first_padding = 0;
+    let mut second_padding = 0;
+    for x in 1..128 {
+        let plaintext: Vec<u8> = vec![1; x];
+        let ciphertext_length = oracle(&plaintext, fixed_key).len();
+        if ciphertext_length > max_length {
+            if first_padding == 0 {
+                first_padding = x;
+                max_length = ciphertext_length;
+            } else {
+                second_padding = x;
+                break;
+            }
+        }
+    }
+    return second_padding - first_padding;
+}
+
+#[cfg(test)]
+// Get AES in ECB mode encryption block size.
+pub fn get_aes_ecb_block_size_2(
+    prefix: &Vec<u8>,
+    oracle: &dyn Fn(&Vec<u8>, &Vec<u8>, &Vec<u8>) -> Vec<u8>,
+    fixed_key: &Vec<u8>,
+) -> usize {
+    let mut max_length = oracle(prefix, &Vec::new(), fixed_key).len();
+    let mut first_padding = 0;
+    let mut second_padding = 0;
+    for x in 1..128 {
+        let plaintext: Vec<u8> = vec![1; x];
+        let ciphertext_length = oracle(prefix, &plaintext, fixed_key).len();
+        if ciphertext_length > max_length {
+            if first_padding == 0 {
+                first_padding = x;
+                max_length = ciphertext_length;
+            } else {
+                second_padding = x;
+                break;
+            }
+        }
+    }
+    return second_padding - first_padding;
+}
+
+#[cfg(test)]
+// Breaks AES in ECB mode encryption one byte at a time (simple).
+pub fn break_aes_ecb_simple(oracle: &dyn Fn(&Vec<u8>, &Vec<u8>) -> Vec<u8>) -> Vec<u8> {
+    let mut rng = thread_rng();
+    let fixed_key: Vec<u8> = (0..AES_BLOCK_SIZE).map(|_| rng.gen::<u8>()).collect();
+    // Discovers the block size of the cipher.
+    let block_size = get_aes_ecb_block_size(oracle, &fixed_key);
+    // Detects that the function is using ECB.
+    let is_aes_ecb = detect_aes_ecb(&oracle(&vec![1; block_size * 2], &fixed_key));
+    if !is_aes_ecb {
+        panic!("Not AES ECB");
+    }
+    let ciphertext = oracle(&Vec::new(), &fixed_key);
+    let ciphertext_length = ciphertext.len();
+    let num_blocks = ciphertext_length / block_size;
+    let mut decrypted_bytes = Vec::new();
+    // Enumerate through each byte of ciphertext, matching every possible last byte to known reference block.
+    // Technically O(n) but feels like it's taking too long?
+    for x in 0..num_blocks {
+        for y in 1..(block_size + 1) {
+            let reference_block = oracle(&vec![1; block_size - y], &fixed_key)
+                [(x * block_size)..((x + 1) * block_size)]
+                .to_vec();
+            for z in 0..255 {
+                let comparison_block = oracle(
+                    &[vec![1; block_size - y], decrypted_bytes.to_vec(), vec![z]].concat(),
+                    &fixed_key,
+                )[(x * block_size)..((x + 1) * block_size)]
+                    .to_vec();
+                if comparison_block == reference_block {
+                    decrypted_bytes.append(&mut vec![z]);
+                    break;
+                }
+            }
+        }
+    }
+    // Trims the last byte.
+    decrypted_bytes.truncate(decrypted_bytes.len() - 1);
+    return decrypted_bytes;
+}
+
+#[cfg(test)]
+// Breaks AES in ECB mode encryption one byte at a time (hard).
+pub fn break_aes_ecb_hard(oracle: &dyn Fn(&Vec<u8>, &Vec<u8>, &Vec<u8>) -> Vec<u8>) -> Vec<u8> {
+    let mut rng = thread_rng();
+    let fixed_key: Vec<u8> = (0..AES_BLOCK_SIZE).map(|_| rng.gen::<u8>()).collect();
+    let prefix: Vec<u8> = (0..rng.gen_range(1, AES_BLOCK_SIZE * 10))
+        .map(|_| rng.gen::<u8>())
+        .collect();
+    let prefix_length = prefix.len();
+    // Discovers the block size of the cipher.
+    let block_size = get_aes_ecb_block_size_2(&prefix, oracle, &fixed_key);
+    println!("Block size: {}", block_size);
+    // Detects that the function is using ECB.
+    let is_aes_ecb = detect_aes_ecb(&oracle(&prefix, &vec![1; block_size * 3], &fixed_key));
+    if !is_aes_ecb {
+        panic!("Not AES ECB");
+    }
+
+    // Calculates offset to balance prefix.
+    let mut offset_length = 0;
+    for x in 0..block_size {
+        let input = [vec![1; x], vec![2; block_size * 2]].concat();
+        if detect_aes_ecb(&oracle(&prefix, &input, &fixed_key)) {
+            offset_length = x;
+            break;
+        }
+    }
+
+    let ciphertext = oracle(&prefix, &vec![1; offset_length], &fixed_key);
+    let ciphertext_length = ciphertext.len();
+    let num_blocks = ciphertext_length / block_size;
+    let mut decrypted_bytes = Vec::new();
+
+    // Enumerate through each byte of ciphertext, matching every possible last byte to known reference block.
+    // Technically O(n) but feels like it's taking too long?
+    for x in ((prefix_length + offset_length) / block_size)..num_blocks {
+        for y in 1..(block_size + 1) {
+            let reference_block = oracle(
+                &prefix,
+                &[vec![1; offset_length], vec![2; block_size - y]].concat(),
+                &fixed_key,
+            )[(x * block_size)..((x + 1) * block_size)]
+                .to_vec();
+            for z in 0..255 {
+                let comparison_block = oracle(
+                    &prefix,
+                    &[
+                        vec![1; offset_length],
+                        vec![2; block_size - y],
+                        decrypted_bytes.to_vec(),
+                        vec![z],
+                    ]
+                    .concat(),
+                    &fixed_key,
+                )[(x * block_size)..((x + 1) * block_size)]
+                    .to_vec();
+                if comparison_block == reference_block {
+                    decrypted_bytes.append(&mut vec![z]);
+                    break;
+                }
+            }
+        }
+    }
+    // Trims the last byte.
+    decrypted_bytes.truncate(decrypted_bytes.len() - 1);
+    return decrypted_bytes;
 }
 
 #[cfg(test)]
