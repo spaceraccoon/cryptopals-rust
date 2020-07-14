@@ -11,3 +11,12 @@ fn test_1() {
 
     assert_eq!(expected_result, pkcs7_pad(&bytes, size));
 }
+
+#[test]
+fn test_2() {
+    let bytes = vec![1, 1, 1, 1, 1, 1, 1, 1];
+    let size = 8;
+    let expected_result = vec![1, 1, 1, 1, 1, 1, 1, 1, 8, 8, 8, 8, 8, 8, 8, 8];
+
+    assert_eq!(expected_result, pkcs7_pad(&bytes, size));
+}

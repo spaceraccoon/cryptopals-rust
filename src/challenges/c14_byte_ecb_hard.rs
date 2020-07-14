@@ -1,6 +1,7 @@
 #[cfg(test)]
 use crate::utils::{decrypt::break_aes_ecb_hard, encrypt::encryption_oracle_3};
 
+// See https://zachgrace.com/posts/attacking-ecb/
 #[test]
 fn test_1() {
     let plaintext = break_aes_ecb_hard(&encryption_oracle_3);

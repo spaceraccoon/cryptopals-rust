@@ -12,3 +12,5 @@ mod c11_ecb_cbc_detection_oracle;
 // mod c12_byte_ecb_simple; // passing but takes about 5 seconds
 mod c13_ecb_cut_paste;
 // mod c14_byte_ecb_hard; // passing but takes about 5 seconds
+mod c15_pcks_padding_validation;
+mod c16_cbc_bitflipping;

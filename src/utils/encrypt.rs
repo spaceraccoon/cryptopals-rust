@@ -38,7 +38,7 @@ pub fn encrypt_aes_ecb(plaintext: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
 }
 
 #[cfg(test)]
-// Sequentially XOR each byte of the key with plaintext.
+// Encrypts using AES CBC.
 pub fn encrypt_aes_cbc(plaintext: &Vec<u8>, key: &Vec<u8>, iv: &Vec<u8>) -> Vec<u8> {
     return encrypt(Cipher::aes_128_cbc(), key, Some(iv), plaintext).unwrap();
 }
@@ -95,7 +95,7 @@ pub fn pkcs7_pad(plaintext: &Vec<u8>, block_size: usize) -> Vec<u8> {
     let mut padded: Vec<u8> = Vec::new();
     let mut padding_length = block_size;
     if plaintext_length % block_size != 0 {
-        padding_length = block_size % (plaintext_length % block_size);
+        padding_length = block_size - (plaintext_length % block_size);
     }
     let mut padding = vec![padding_length as u8; padding_length];
     padded.append(&mut plaintext.clone());

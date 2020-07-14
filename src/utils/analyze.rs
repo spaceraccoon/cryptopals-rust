@@ -56,6 +56,19 @@ pub fn compute_edit_distance(x: Vec<u8>, y: Vec<u8>) -> u64 {
         .fold(0, |distance, (a, b)| distance + (a ^ b).count_ones() as u64)
 }
 
+#[cfg(test)]
+// Validates PCKS7 padding.
+pub fn validate_pkcs7_padding(bytes: &Vec<u8>) -> bool {
+    let length = bytes.len();
+    let padding_size = bytes[length - 1];
+    for x in 0..padding_size as usize {
+        if bytes[length - (x + 1)] != padding_size {
+            return false;
+        }
+    }
+    return true;
+}
+
 #[test]
 fn compute_edit_distance_test_1() {
     let s1 = String::from("this is a test");

@@ -204,7 +204,6 @@ pub fn break_aes_ecb_hard(oracle: &dyn Fn(&Vec<u8>, &Vec<u8>, &Vec<u8>) -> Vec<u
     let prefix_length = prefix.len();
     // Discovers the block size of the cipher.
     let block_size = get_aes_ecb_block_size_2(&prefix, oracle, &fixed_key);
-    println!("Block size: {}", block_size);
     // Detects that the function is using ECB.
     let is_aes_ecb = detect_aes_ecb(&oracle(&prefix, &vec![1; block_size * 3], &fixed_key));
     if !is_aes_ecb {
