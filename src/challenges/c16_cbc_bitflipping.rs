@@ -1,9 +1,5 @@
 #[cfg(test)]
-use crate::utils::{
-    decrypt::decrypt_aes_cbc, decrypt::AES_BLOCK_SIZE, encrypt::encrypt_aes_cbc, encrypt::pkcs7_pad,
-};
-#[cfg(test)]
-use openssl::symm::{decrypt, encrypt, Cipher};
+use crate::utils::{decrypt::decrypt_aes_cbc, decrypt::AES_BLOCK_SIZE, encrypt::encrypt_aes_cbc};
 #[cfg(test)]
 use rand::{thread_rng, Rng};
 
@@ -13,16 +9,14 @@ pub fn encrypting_oracle(plaintext: String, key: &Vec<u8>) -> (Vec<u8>, Vec<u8>)
     let mut rng = thread_rng();
     let prefix = Vec::from("comment1=cooking%20MCs;userdata=");
     let suffix = Vec::from(";comment2=%20like%20a%20pound%20of%20bacon");
-    let prefix2 = Vec::from("comment1=cooking%20MCs;userdata=");
-    let suffix2 = Vec::from(";comment2=%20like%20a%20pound%20of%20bacon");
     let iv = (0..AES_BLOCK_SIZE).map(|_| rng.gen::<u8>()).collect();
 
-    // Quotes out ";" and "=" characters.
+    // Sanitizes the ";" and "=" characters.
     return (
         encrypt_aes_cbc(
             &vec![
                 prefix,
-                Vec::from(plaintext.replace(&[';', '='][..], "")),
+                Vec::from(plaintext.replace(&[';', '='][..], "$")),
                 suffix,
             ]
             .concat(),

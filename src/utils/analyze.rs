@@ -61,6 +61,10 @@ pub fn compute_edit_distance(x: Vec<u8>, y: Vec<u8>) -> u64 {
 pub fn validate_pkcs7_padding(bytes: &Vec<u8>) -> bool {
     let length = bytes.len();
     let padding_size = bytes[length - 1];
+    // No zero padding.
+    if padding_size == 0 {
+        return false;
+    }
     for x in 0..padding_size as usize {
         if bytes[length - (x + 1)] != padding_size {
             return false;
