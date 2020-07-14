@@ -313,6 +313,30 @@ pub fn pkcs7_unpad(plaintext: &Vec<u8>) -> Vec<u8> {
     return unpadded;
 }
 
+#[cfg(test)]
+// Decrypts CTR.
+pub fn decrypt_aes_ctr(
+    ciphertext: &Vec<u8>,
+    key: &Vec<u8>,
+    nonce: u64,
+    block_size: usize,
+) -> Vec<u8> {
+    let mut counter: u64 = 0;
+    let mut plaintext = vec![0; ciphertext.len()];
+
+    for (block_index, block) in ciphertext.chunks(block_size).enumerate() {
+        let block_offset = block_index * block_size;
+        let input: Vec<u8> = [nonce.to_le_bytes(), counter.to_le_bytes()].concat();
+        let keystream = encrypt(Cipher::aes_128_ecb(), key, None, &input).unwrap();
+        for (byte_index, byte) in block.iter().enumerate() {
+            plaintext[block_offset + byte_index] = byte ^ keystream[byte_index];
+        }
+        counter = counter + 1;
+    }
+
+    return plaintext;
+}
+
 #[test]
 fn guess_keysize_test_1() {
     let ciphertext = String::from("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f");

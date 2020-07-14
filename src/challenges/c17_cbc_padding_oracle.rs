@@ -70,7 +70,6 @@ fn test_1() {
             for x in 0..255 {
                 attack[i] = x;
                 if padding_oracle(&Vec::from(*block), &key, &attack) {
-                    println!("Correct is {}", x);
                     intermediate[i] = padding ^ x;
                     plaintext[block_offset + i] = previous_block[i] ^ intermediate[i];
                     break;

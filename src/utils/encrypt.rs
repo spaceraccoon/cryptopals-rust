@@ -102,3 +102,27 @@ pub fn pkcs7_pad(plaintext: &Vec<u8>, block_size: usize) -> Vec<u8> {
     padded.append(&mut padding);
     return padded;
 }
+
+#[cfg(test)]
+// Ecnrypts CTR.
+pub fn encrypt_aes_ctr(
+    plaintext: &Vec<u8>,
+    key: &Vec<u8>,
+    nonce: u64,
+    block_size: usize,
+) -> Vec<u8> {
+    let mut counter: u64 = 0;
+    let mut ciphertext = vec![0; plaintext.len()];
+
+    for (block_index, block) in plaintext.chunks(block_size).enumerate() {
+        let block_offset = block_index * block_size;
+        let input: Vec<u8> = [nonce.to_le_bytes(), counter.to_le_bytes()].concat();
+        let keystream = encrypt(Cipher::aes_128_ecb(), key, None, &input).unwrap();
+        for (byte_index, byte) in block.iter().enumerate() {
+            ciphertext[block_offset + byte_index] = byte ^ keystream[byte_index];
+        }
+        counter = counter + 1;
+    }
+
+    return ciphertext;
+}
