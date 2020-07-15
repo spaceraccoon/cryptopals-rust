@@ -1,6 +1,10 @@
 #[cfg(test)]
 use crate::utils::convert::base64_to_bytes;
 #[cfg(test)]
+use crate::utils::{rng::MersenneTwister, rng::STATE_SIZE};
+#[cfg(test)]
+use byteorder::{ByteOrder, LittleEndian};
+#[cfg(test)]
 use openssl::symm::{encrypt, Cipher};
 #[cfg(test)]
 use rand::{thread_rng, Rng};
@@ -122,6 +126,33 @@ pub fn encrypt_aes_ctr(
             ciphertext[block_offset + byte_index] = byte ^ keystream[byte_index];
         }
         counter = counter + 1;
+    }
+
+    return ciphertext;
+}
+
+#[cfg(test)]
+// Ecnrypts using MT19937 PRNG stream.
+pub fn encrypt_mt19937_stream(plaintext: &Vec<u8>, seed: u16) -> Vec<u8> {
+    let mut buffer_index: usize = 0;
+    let length = plaintext.len();
+    let buffer = &mut [0u8; 4];
+    let mut mt = MersenneTwister {
+        state: vec![0; STATE_SIZE],
+        index: 0,
+    };
+    mt.init(u32::from(seed));
+    let mut ciphertext = vec![0; length];
+
+    for (byte_index, byte) in plaintext.iter().enumerate() {
+        // Enters next random number to buffer and resets index.
+        if buffer_index == 4 {
+            let random_number = mt.next().unwrap();
+            <LittleEndian as ByteOrder>::write_u32(buffer, random_number);
+            buffer_index = 0;
+        }
+        ciphertext[byte_index] = byte ^ buffer[buffer_index];
+        buffer_index += 1;
     }
 
     return ciphertext;

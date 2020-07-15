@@ -1,12 +1,10 @@
 #[cfg(test)]
 use crate::utils::{
-    convert::base64_to_bytes, decrypt::decrypt_aes_ctr, decrypt::guess_repeating_key,
-    decrypt::AES_BLOCK_SIZE, encrypt::encrypt_aes_ctr, encrypt::repeating_key_xor,
+    convert::base64_to_bytes, decrypt::guess_repeating_key, decrypt::AES_BLOCK_SIZE,
+    encrypt::encrypt_aes_ctr, encrypt::repeating_key_xor,
 };
 #[cfg(test)]
 use rand::{thread_rng, Rng};
-#[cfg(test)]
-use std::collections::HashMap;
 #[cfg(test)]
 use std::{fs::File, io::BufRead, io::BufReader};
 

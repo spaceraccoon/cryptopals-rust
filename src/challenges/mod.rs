@@ -17,3 +17,7 @@ mod c16_cbc_bitflipping;
 mod c17_cbc_padding_oracle;
 mod c18_ctr_stream_cipher;
 mod c19_break_fixed_nonce_ctr;
+mod c21_mt19937_rng;
+mod c22_crack_mt19937_seed;
+mod c23_clone_mt19937;
+mod c24_break_mt19937;
