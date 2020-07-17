@@ -8,6 +8,8 @@ use byteorder::{ByteOrder, LittleEndian};
 use openssl::symm::{encrypt, Cipher};
 #[cfg(test)]
 use rand::{thread_rng, Rng};
+#[cfg(test)]
+use sha1::{Digest, Sha1};
 
 #[cfg(test)]
 pub const AES_BLOCK_SIZE: usize = 16;
@@ -156,4 +158,13 @@ pub fn encrypt_mt19937_stream(plaintext: &Vec<u8>, seed: u16) -> Vec<u8> {
     }
 
     return ciphertext;
+}
+
+#[cfg(test)]
+// Generates a SHA1 MAC.
+pub fn generate_sha1_mac(key: &Vec<u8>, plaintext: &Vec<u8>) -> Vec<u8> {
+    let mut hasher = Sha1::new();
+
+    hasher.update([key.clone(), plaintext.clone()].concat());
+    return hasher.finalize().to_vec();
 }

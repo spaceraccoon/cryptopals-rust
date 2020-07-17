@@ -29,7 +29,7 @@ fn undo_left(val: u32, shift: u32, constant: u32) -> u32 {
 fn untemper(outputs: &Vec<u32>) -> Vec<u32> {
     let mut untempered = outputs.clone();
     for i in 0..STATE_SIZE {
-        // Refer to https://occasionallycogent.com/inverting_the_mersenne_temper/index.html
+        // Refer to https://occasionallycogent.com/inverting_the_mersenne_temper/index.html; https://cedricvanrompay.gitlab.io/cryptopals/challenges/23.html
         untempered[i] = undo_right(untempered[i], 18);
         untempered[i] = undo_left(untempered[i], 15, 0xefc6_0000);
         untempered[i] = undo_left(untempered[i], 7, 0x9d2c_5680);
